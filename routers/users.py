@@ -107,6 +107,18 @@ if True: # 로그인
         else:
             conn.close()
             return {"result" : "fail", "detail": "exist_account"}
+        
+    # 회원업뎃
+    @router.get("/profile")
+    def register(session_id: Optional[str] = Cookie(None), a:Optional[str]=None, b:Optional[str]=None, c:Optional[str]=None):
+        
+        conn, cur = connect_db()
+
+        query = 'UPDATE profile SET img=%s, introduction=%s, visible=%s WHERE std_no=%s'
+        cur.execute(query, (a, b, 1 if c else 0, sessData[session_id]["std_no"]))
+        conn.commit()
+        row = cur.fetchone()
+        return {"result" : "success"}
 
 if True: # 조회
     # 자기 유저 정보 조회 (학번 포함됨)

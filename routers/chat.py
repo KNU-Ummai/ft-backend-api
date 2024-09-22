@@ -65,7 +65,36 @@ async def websocket_endpoint(target_id, websocket: WebSocket):
             conn.commit()
             row = cur.fetchone()
             
-            await manager.send(id, target_id)
+            await manager.send(id +"|"+ data, target_id)
     except WebSocketDisconnect:
         manager.disconnect(id)
         conn.close()
+
+@router.get("/httpws/{target_id}")
+def get(target_id, session_id: Optional[str] = Cookie(None)):
+    
+    std_no = sessData[session_id]["std_no"]
+
+    conn, cur = connect_db()
+    query = 'SELECT std_no FROM user WHERE id=%s'
+    cur.execute(query, target_id)
+    row = cur.fetchone()
+    if row:
+        target_std_no = row[0]
+    else:
+        return {"result", "fail"}
+    
+    query = 'SELECT source, content FROM chat WHERE (source=%s and target=%s) or (source=%s and target=%s)'
+    cur.execute(query, (target_std_no, std_no, std_no,target_std_no))
+    rows = cur.fetchall()
+
+    boxs = []
+    for row in rows:
+        isMy = False
+        if row[0] == std_no:
+            isMy = True
+        boxs.append({"me":isMy, "msg":row[1]})
+    
+    return {"result":"success",
+            "count" : len(boxs),
+            "boxes" : boxs}

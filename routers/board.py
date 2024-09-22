@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, Cookie
 from pydantic import BaseModel
 from typing import Optional
-import pymysql
+import pymysql, time
 from uuid import uuid4
 from routers.common import *
 
@@ -40,7 +40,7 @@ if True: # 게시물 작성/조회
             conditions = " WHERE author LIKE %s or title LIKE %s or content LIKE %s"
             query_params = tuple(["%"+search_term+"%" for x in range(3)]) + query_params
 
-        query = 'SELECT article_id, title, content FROM tip_board ' \
+        query = 'SELECT article_id, title, content, postTime FROM tip_board ' \
                     + conditions + 'ORDER BY article_id DESC LIMIT 20 OFFSET %s'
         
         print(query% query_params)
@@ -53,7 +53,8 @@ if True: # 게시물 작성/조회
             article_list.append({
                 "article_id": row[0],
                 "title": row[1],
-                "content": row[2] if len(row[2]) < 20 else row[2][:20] + "..."
+                "content": row[2] if len(row[2]) < 20 else row[2][:20] + "...",
+                "postTime": str(int((time.time() - int(row[3]))/60/60)) + "h ago"
             })
         
         return {
@@ -111,12 +112,12 @@ if True: # 게시물 작성/조회
 
         query_params += (
             None, article_param.title,
-            article_param.content, std_no, id, str(files), 0
+            article_param.content, std_no, id, str(files), int(time.time()), 0
         )
         
         # article_id, title, content, std_no, file, scrap_count
         query = 'INSERT INTO tip_board \
-                    VALUES(%s, %s, %s, %s, %s, %s, %s)'
+                    VALUES(%s, %s, %s, %s, %s, %s, %s, %s)'
         cur.execute(query, query_params)
         conn.commit()
         
